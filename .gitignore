@@ -1,0 +1,17 @@
+# Env & secrets
+.env
+*.key
+
+# Data volumineuse / sensible
+qdrant_storage/
+*.json.bak
+__pycache__/
+*.pyc
+
+# Logs
+echec_logger_output/
+*.jsonl
+
+# Venv
+venv/
+.venv/
