@@ -2,7 +2,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-
 # ── Chemins ──
 BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_PATH = BASE_DIR / "data" / "edidact_phase0_dataset.json"
@@ -17,11 +16,25 @@ LOG_EXEMPLES_MONTRES = BASE_DIR / "logs" / "exemples_montres.jsonl"
 LOG_CORRECTIONS_PATH = BASE_DIR / "logs" / "corrections_professeur.jsonl"
 
 # ── Connexion Qdrant ──
+def _get_secret(key: str) -> str | None:
+    """Lit une variable soit depuis st.secrets (Streamlit Cloud), soit depuis .env (local/script)."""
+    try:
+        import streamlit as st
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    return os.getenv(key)
+
+QDRANT_URL = _get_secret("QDRANT_URL")
+QDRANT_API_KEY = _get_secret("QDRANT_API_KEY")
+
+# Connexion locale (pour la migration, host/port séparés)
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 
 # ── OpenAI ──
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = _get_secret("OPENAI_API_KEY")
 
 # ── Collection ──
 COLLECTION_NAME = "edidact_exercices"
@@ -41,7 +54,7 @@ CHAMPS_PAYLOAD_INDEXES = ["degree", "category", "sub_category", "sub_sub_categor
 # ── Traitement par batch ──
 BATCH_SIZE = 100
 
-# ── Seuils de déduplication (barrière 3, cohérent avec ta doc) ──
+# ── Seuils de déduplication ──
 SEUIL_DOUBLON_EXACT = 1.0
 SEUIL_DOUBLON_SEMANTIQUE = 0.95
 SEUIL_VARIANTE_A_VERIFIER = 0.85
