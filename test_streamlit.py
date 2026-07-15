@@ -9,8 +9,8 @@ import json
 import threading
 from collections import Counter
 import streamlit as st
-from qdrant_client import QdrantClient
-from src.config.config import QDRANT_HOST, QDRANT_PORT, COLLECTION_HYBRID, LOG_EXEMPLES_MONTRES
+from src.config.config import COLLECTION_HYBRID, LOG_EXEMPLES_MONTRES
+from src.database.client import get_client
 from src.generation.pipeline import generer_nouvel_exercice
 from src.generation.correction_professeur import corriger_exercice
 from src.generation.validation import compter_elements
@@ -154,7 +154,7 @@ def charger_combinaisons() -> dict:
     Certains points ont un payload malformé (champ stocké comme liste au lieu
     d'une chaîne) — normalisés ici plutôt que de planter.
     """
-    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    client = get_client()
     arbre: dict = {}
     offset = None
     points_ignores = 0
