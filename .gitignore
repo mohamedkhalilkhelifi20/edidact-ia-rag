@@ -16,3 +16,5 @@ echec_logger_output/
 venv/
 .venv/
 .idea/
+.agents/
+.claude/
