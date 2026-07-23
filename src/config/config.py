@@ -286,10 +286,10 @@ TYPES_EXERCICE = {
         }
     },
     "drag_and_drop_paragraphe": {
-        "description": "Texte à trou avec plusieurs étiquettes à glisser-déposer (liste d'options plus large) ; l'élève place la bonne étiquette dans le trou.",
+        "description": "Texte continu à plusieurs trous avec des étiquettes à glisser-déposer — une étiquette par trou, en nombre exact (pas de leurre) ; l'élève place chaque étiquette dans le bon trou.",
         "format_reference": {
             "contenu": {
-                "etiquettes": ["Je", "tu", "elle", "nous", "vous", "ils"],
+                "etiquettes": ["Je", "tu", "elle", "nous"],
                 "texte": "Bonjour ! ___1___ m'appelle Ely et j'ai dix ans. Chaque matin, quand je vais à l'école, maman me dit : « Est-ce que ___2___ as pris ton cartable ? » Maman est très gentille : ___3___ prépare mon petit déjeuner avec soin. À l'école, mes amis et moi, ___4___ jouons dans la cour avant de rentrer en classe."
             },
             "correction": ["Je", "tu", "elle", "nous"]
