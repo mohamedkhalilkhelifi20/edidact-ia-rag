@@ -3,7 +3,11 @@ from src.generation.client_llm import appeler_modele
 
 
 def verifier_et_corriger(
-    exercice: dict, demande_originale: str = "", sub_sub_sub_category: str = "", limite: int = None
+    exercice: dict,
+    demande_originale: str = "",
+    sub_sub_sub_category: str = "",
+    limite: int = None,
+    type_exercice: str = None,
 ) -> dict:
     bloc_demande = ""
     if demande_originale.strip():
@@ -42,7 +46,8 @@ Sinon, corrige uniquement ce qui doit l'être.
 JSON complet corrigé, sans texte avant, sans balises markdown."""
 
     texte_propre, statut = appeler_modele(
-        prompt, reasoning_effort="medium", verbosity="low", etape="relecture", limite=limite
+        prompt, reasoning_effort="medium", verbosity="low", etape="relecture",
+        limite=limite, type_exercice=type_exercice,
     )
 
     if not texte_propre:

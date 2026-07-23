@@ -23,9 +23,11 @@ des listes indépendantes qui obligeraient à recompter pour les relier.
 Ne génère PAS de correction à cette étape. Produis uniquement consigne + contenu."""
 
     limite = demande_professeur.get("limite")
+    type_exercice = demande_professeur.get("type_exercice")
 
     texte_propre, statut = appeler_modele(
-        prompt, reasoning_effort="high", verbosity="low", etape="questions", limite=limite
+        prompt, reasoning_effort="high", verbosity="low", etape="questions",
+        limite=limite, type_exercice=type_exercice,
     )
 
     if not texte_propre:
@@ -39,7 +41,7 @@ Ne génère PAS de correction à cette étape. Produis uniquement consigne + con
         raise RuntimeError(f"Génération des questions a produit un JSON invalide : {e}")
 
 
-def generer_reponses(exercice_sans_correction: dict, limite: int = None) -> dict:
+def generer_reponses(exercice_sans_correction: dict, limite: int = None, type_exercice: str = None) -> dict:
     prompt = f"""# TÂCHE
 Voici un exercice avec ses questions, sans les réponses :
 
@@ -56,7 +58,8 @@ JSON complet (consigne, contenu, correction) — garde "consigne" et "contenu" i
 Dans "correction", uniquement la réponse finale. Sans texte autour, sans balises markdown."""
 
     texte_propre, statut = appeler_modele(
-        prompt, reasoning_effort="high", verbosity="low", etape="reponses", limite=limite
+        prompt, reasoning_effort="high", verbosity="low", etape="reponses",
+        limite=limite, type_exercice=type_exercice,
     )
 
     if not texte_propre:
@@ -85,6 +88,7 @@ def generer_exercice(demande_professeur: dict, exemples: list[dict], max_tentati
     texte_demande = demande_professeur.get("texte", "")
     n_questions_demandees = extraire_nombre_demande(texte_demande)
     limite = demande_professeur.get("limite")
+    type_exercice = demande_professeur.get("type_exercice")
 
     # Étape 1 : génération des questions, avec son propre retry
     exercice_sans_correction = None
@@ -104,15 +108,15 @@ def generer_exercice(demande_professeur: dict, exemples: list[dict], max_tentati
 
     for tentative in range(1, max_tentatives + 1):
         try:
-            exercice = generer_reponses(exercice_sans_correction, limite=limite)
+            exercice = generer_reponses(exercice_sans_correction, limite=limite, type_exercice=type_exercice)
         except RuntimeError as e:
             motif_erreur = str(e)
             print(f"[tentative {tentative}/{max_tentatives}] échec : {motif_erreur}")
             logger_echec(etape="reponses", tentative=tentative, motif=motif_erreur, demande=demande_professeur)
             continue
 
-        # 1-3. Structure + diversité choix + réponse non visible
-        valide, motif = valider_exercice_complet(exercice)
+        # 1-3. Structure + conformité au type + diversité choix + réponse non visible
+        valide, motif = valider_exercice_complet(exercice, type_exercice=type_exercice)
         if not valide:
             motif_erreur = motif
             print(f"[tentative {tentative}/{max_tentatives}] échec : {motif_erreur}")
@@ -151,8 +155,11 @@ def generer_exercice(demande_professeur: dict, exemples: list[dict], max_tentati
                 demande_originale=texte_demande,
                 sub_sub_sub_category=demande_professeur.get("sub_sub_sub_category", ""),
                 limite=limite,
+                type_exercice=type_exercice,
             )
-            valide_apres_relecture, motif_relecture = valider_exercice_complet(exercice_corrige)
+            valide_apres_relecture, motif_relecture = valider_exercice_complet(
+                exercice_corrige, type_exercice=type_exercice
+            )
             if valide_apres_relecture:
                 return exercice_corrige
 

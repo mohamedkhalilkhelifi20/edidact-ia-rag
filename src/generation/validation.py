@@ -1,5 +1,7 @@
 import re
 
+from src.config.config import TYPES_EXERCICE
+
 
 def extraire_nombre_demande(texte_professeur: str) -> int | None:
     """Cherche un nombre de questions explicitement demandé par le professeur (ex: '6 questions')."""
@@ -27,6 +29,57 @@ def valider_structure(exercice) -> tuple[bool, str]:
     return True, ""
 
 
+def verifier_structure_type(exercice: dict, type_exercice: str | None) -> tuple[bool, str]:
+    """
+    Vérifie que la structure de "contenu" produite par le modèle correspond
+    aux clés attendues du format_reference validé pour ce type_exercice
+    (voir TYPES_EXERCICE dans config.py).
+
+    Générique — AUCUN branchement par type ici. La fonction lit uniquement
+    la donnée déjà validée manuellement dans config.py ; elle ne connaît rien
+    des types eux-mêmes. Ajouter/modifier un type_reference dans config.py
+    suffit à changer ce que cette fonction vérifie, sans toucher au code.
+
+    Cas où la vérification est sautée (retourne toujours True) plutôt que de
+    risquer une fausse alerte :
+    - type_exercice absent/None (ex: relecture sans contexte de type)
+    - type inconnu de TYPES_EXERCICE
+    - format_reference pas encore validé pour ce type (None) — 2 types sur 13
+      dans cet état au moment où cette fonction a été écrite ; comportement
+      identique à avant pour eux
+    - "contenu" du format_reference ou de l'exercice généré n'est pas un dict
+      de premier niveau comparable (structure trop différente pour comparer
+      des clés simplement)
+    """
+    if not type_exercice:
+        return True, ""
+
+    info = TYPES_EXERCICE.get(type_exercice)
+    if not info:
+        return True, ""
+
+    format_reference = info.get("format_reference")
+    if not format_reference:
+        return True, ""
+
+    contenu_attendu = format_reference.get("contenu")
+    contenu_obtenu = exercice.get("contenu")
+
+    if not isinstance(contenu_attendu, dict) or not isinstance(contenu_obtenu, dict):
+        return True, ""
+
+    cles_attendues = set(contenu_attendu.keys())
+    cles_obtenues = set(contenu_obtenu.keys())
+
+    if cles_attendues != cles_obtenues:
+        return False, (
+            f"structure de 'contenu' non conforme au type '{type_exercice}' : "
+            f"clés attendues {sorted(cles_attendues)}, clés obtenues {sorted(cles_obtenues)}"
+        )
+
+    return True, ""
+
+
 # ── Helpers structurels partagés ──────────────────────────────────────────
 # Une seule façon de "lire" une structure contenu/correction dans tout le
 # fichier — jamais de nom de clé supposé (le LLM choisit librement sa
@@ -46,6 +99,15 @@ def _extraire_liste_items(valeur):
             return imbriques[0]
         return list(valeur.values())
     return []
+
+
+def extraire_liste_items(valeur):
+    """
+    Alias public de _extraire_liste_items — même logique, exposée pour
+    réutilisation hors de ce module (ex: rendu Streamlit) sans dupliquer
+    la logique d'extraction de liste.
+    """
+    return _extraire_liste_items(valeur)
 
 
 def _texte_principal(item) -> str:
@@ -194,15 +256,23 @@ def verifier_reponse_non_visible(exercice: dict) -> tuple[bool, str]:
     return True, ""
 
 
-def valider_exercice_complet(exercice: dict) -> tuple[bool, str]:
+def valider_exercice_complet(exercice: dict, type_exercice: str | None = None) -> tuple[bool, str]:
     """
     Chaîne complète des validations déterministes. Utilisée à deux moments
     identiques dans le pipeline :
     1. sur l'exercice généré initialement
     2. sur l'exercice renvoyé par la relecture LLM (verifier_et_corriger) — pour
        s'assurer que la relecture n'a pas réintroduit un problème déjà écarté.
+
+    type_exercice : optionnel — si fourni, ajoute la vérification structurelle
+    contre le format_reference du type demandé (voir verifier_structure_type).
+    Rétrocompatible : si omis, se comporte exactement comme avant ce check.
     """
     valide, motif = valider_structure(exercice)
+    if not valide:
+        return False, motif
+
+    valide, motif = verifier_structure_type(exercice, type_exercice)
     if not valide:
         return False, motif
 

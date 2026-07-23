@@ -13,14 +13,9 @@ def logger_appel(
     statut: str,
     limite: int = None,
     raisonnement: str = "",
+    type_exercice: str = None,
 ) -> None:
-    """
-    Trace CHAQUE appel au modèle (succès ou échec) dans un fichier JSON.
-    `limite` (taille du pool d'exemples Qdrant demandée) est incluse pour
-    pouvoir comparer objectivement plusieurs valeurs de limite entre elles —
-    sans ce champ, impossible de relier après coup un temps/échec à la valeur
-    de limite qui était utilisée à ce moment-là.
-    """
+   
     entree = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "etape": etape,
@@ -29,6 +24,7 @@ def logger_appel(
         "duree_s": round(duree, 2),
         "statut": statut,
         "limite": limite,
+        "type_exercice": type_exercice,
         "raisonnement": raisonnement,
     }
 

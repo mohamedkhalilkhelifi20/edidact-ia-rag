@@ -3,3 +3,21 @@ fileWatcherType = "none"
 
 [client]
 showErrorDetails = false
+
+[theme]
+base = "light"
+font = "sans serif"
+
+[theme.light]
+primaryColor = "#E0001B"
+backgroundColor = "#FAFAF8"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#171717"
+borderColor = "#E3E1DC"
+
+[theme.dark]
+primaryColor = "#FF3B47"
+backgroundColor = "#141414"
+secondaryBackgroundColor = "#1D1D1B"
+textColor = "#F5F4F0"
+borderColor = "#3A3A36"

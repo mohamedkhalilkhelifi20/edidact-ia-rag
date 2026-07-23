@@ -6,6 +6,7 @@ class DemandeExercice(BaseModel):
     sub_sub_category: str
     sub_sub_sub_category: str
     degree: str
+    type_exercice: str
     texte: str = ""
     limite: int = 3
 

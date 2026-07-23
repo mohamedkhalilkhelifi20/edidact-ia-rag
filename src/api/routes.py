@@ -32,6 +32,7 @@ def generer_exercice_endpoint(demande: DemandeExercice):
             sub_sub_category=demande.sub_sub_category,
             sub_sub_sub_category=demande.sub_sub_sub_category,
             degree=demande.degree,
+            type_exercice=demande.type_exercice,
             texte=demande.texte,
             limite=demande.limite,
         )

@@ -48,6 +48,7 @@ def appeler_modele(
     verbosity: str = "low",
     etape: str = "non_precisee",
     limite: int = None,
+    type_exercice: str = None,
 ) -> tuple[str, str]:
     """
     Point d'entrée UNIQUE pour appeler le LLM — API Responses.
@@ -55,6 +56,11 @@ def appeler_modele(
     limite : la taille du pool d'exemples Qdrant utilisée pour cette génération —
     transmise jusqu'au log de performance, pour pouvoir comparer objectivement
     plusieurs valeurs de limite entre elles.
+
+    type_exercice : type demandé par le professeur (ex: "clavier_maths"), transmis
+    jusqu'au log — permet, plus tard, de mesurer objectivement si le taux
+    d'échec/de retry varie selon le type. Optionnel : certains appels (ex.
+    relecture, correction professeur) n'ont pas toujours ce contexte disponible.
 
     Retourne (texte_nettoyé, statut).
     """
@@ -82,6 +88,7 @@ def appeler_modele(
         statut=statut,
         limite=limite,
         raisonnement=raisonnement,
+        type_exercice=type_exercice,
     )
 
     return texte_propre, statut

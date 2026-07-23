@@ -18,6 +18,7 @@ def logger_echec(etape: str, tentative: int, motif: str, demande: dict) -> None:
         "sub_category": demande.get("sub_category"),
         "sub_sub_sub_category": demande.get("sub_sub_sub_category"),
         "degree": demande.get("degree"),
+        "type_exercice": demande.get("type_exercice"),
         "limite": demande.get("limite"),
     }
 

@@ -1,5 +1,6 @@
 # src/generation/prompt_builder.py
 import json
+from src.config.config import TYPES_EXERCICE
 
 def construire_prompt(demande_professeur: dict, exemples: list[dict]) -> str:
     category = demande_professeur["category"]
@@ -8,6 +9,30 @@ def construire_prompt(demande_professeur: dict, exemples: list[dict]) -> str:
     sub_sub_sub_category = demande_professeur["sub_sub_sub_category"]
     degree = demande_professeur["degree"]
     theme = demande_professeur.get("texte", "").strip() or "le même thème que les exemples"
+    type_exercice = demande_professeur["type_exercice"]
+
+    type_info = TYPES_EXERCICE.get(type_exercice)
+    if type_info is None:
+        # Type totalement inconnu de TYPES_EXERCICE — comportement identique
+        # à avant : aucune référence, le modèle utilise son jugement.
+        description_type = "Type non répertorié — utilise ton jugement pour la structure la plus adaptée."
+        format_reference = None
+    else:
+        description_type = type_info.get("description", "")
+        format_reference = type_info.get("format_reference")
+
+    # Bloc structure : injecté SEULEMENT si ce type a été validé manuellement
+    # (format_reference non None). Tant qu'un type n'a pas encore été validé
+    # un par un avec Mohamed (voir config.py), on ne fabrique rien à sa place —
+    # le modèle retombe sur la description seule, comme avant ce changement.
+    bloc_structure = ""
+    if format_reference is not None:
+        bloc_structure = f"""
+STRUCTURE JSON DE RÉFÉRENCE POUR CE TYPE (respecte EXACTEMENT cette forme de
+"contenu" et de "correction" — mêmes noms de clés, même organisation ; seul
+le contenu pédagogique change, jamais la structure) :
+{json.dumps(format_reference, ensure_ascii=False, indent=2)}
+"""
 
     exemples_texte = ""
     for i, ex in enumerate(exemples, 1):
@@ -33,13 +58,13 @@ EXEMPLES D'EXERCICES RÉELS DE CETTE MATIÈRE ET CE NIVEAU (référence de style
 {exemples_texte}
 
 TA TÂCHE :
-Avant de générer, réfléchis : quelle est la structure pédagogique la PLUS ADAPTÉE pour évaluer
-"{sub_sub_sub_category}" au niveau {degree} ? Un QCM, un texte à trous, une association, un tableau
-à compléter, une question ouverte, un vrai/faux, un calcul ? Choisis la structure que choisirait
-un enseignant expérimenté pour ce sujet précis — pas nécessairement la même structure que les exemples
-ci-dessus, qui ne servent qu'à calibrer le style, la langue et la difficulté.
-
-Crée ensuite UN NOUVEL exercice original sur ce sujet, avec la structure que tu as choisie.
+Le type d'exercice est IMPOSÉ par le professeur : "{type_exercice}".
+{description_type}
+{bloc_structure}
+Ne réfléchis PAS à un autre type de structure (QCM, vrai/faux, association, etc.) —
+celle-ci est déjà décidée. Ta seule tâche est de créer UN NOUVEL exercice original
+sur le sujet demandé, dont le contenu et la correction respectent cette structure
+d'interaction précise.
 
 RÈGLES STRICTES :
 1. Le JSON doit contenir exactement trois clés : "consigne", "contenu", "correction".
@@ -181,15 +206,16 @@ RÈGLES STRICTES :
     applicable), ne pose pas cette question — remplace-la par une question sur
     un autre aspect que tu peux vérifier avec certitude.
 23. RICHESSE PÉDAGOGIQUE MINIMALE : même sans thème précis fourni par le professeur,
-    ne choisis JAMAIS la structure la plus simple/basique par défaut (comme un simple
-    "complète avec le mot A ou B"). Privilégie toujours une structure qui demande une
-    vraie réflexion ou un vrai calcul de la part de l'élève — par exemple, pour un
-    sujet comme "nombres premiers", préfère demander d'identifier des nombres premiers
-    PARMI plusieurs candidats (comme un tri, une sélection dans une liste), plutôt que
-    de simplement demander si un nombre déjà donné est premier ou non. Pose-toi la
-    question : "est-ce que cet exercice demande un vrai raisonnement, ou juste de
-    recopier un mot dans un espace vide ?" Si c'est la deuxième option, choisis une
-    structure plus exigeante.
+    ne remplis JAMAIS la structure imposée avec le contenu le plus simple/basique par
+    défaut (comme un simple "complète avec le mot A ou B" quand la structure permet
+    mieux). Privilégie toujours un contenu qui demande une vraie réflexion ou un vrai
+    calcul de la part de l'élève — par exemple, pour un sujet comme "nombres premiers",
+    préfère demander d'identifier des nombres premiers PARMI plusieurs candidats
+    (un tri, une sélection dans une liste), plutôt que de simplement demander si un
+    nombre déjà donné est premier ou non. Pose-toi la question : "est-ce que ce contenu
+    demande un vrai raisonnement, ou juste de recopier un mot dans un espace vide ?"
+    Si c'est la deuxième option, exige davantage de l'élève dans le contenu, tout en
+    respectant la structure imposée.
 24. FORMAT PAPIER RÉALISTE : pense TOUJOURS à la façon dont un élève va physiquement
     répondre sur une feuille imprimée, pas seulement à la logique du contenu JSON.
     - "Entoure" : nécessite que les éléments à choisir soient présentés en ligne ou
@@ -207,6 +233,18 @@ RÈGLES STRICTES :
     reconstruire cette mise en page papier plus tard (par exemple, prévoir un champ
     ou une structure qui indique clairement "ceci est une colonne A à remplir" plutôt
     que juste deux listes de résultats déjà séparés).
+25. PAS DE FORMULE RÉPÉTÉE D'UN ITEM À L'AUTRE : quand l'exercice contient plusieurs
+    questions/items dans une liste, ne réintroduis jamais la même phrase-cadre au
+    début de chacun (par exemple "Quel est l'infinitif du verbe dans « ... » ?" répété
+    identique à chaque question). Si la "consigne" annonce déjà la tâche à accomplir,
+    chaque item ne doit contenir QUE l'élément propre à traiter (la phrase source,
+    le mot, le calcul...), jamais la question méta déjà sous-entendue par la consigne.
+    Exemple INCORRECT : consigne "Choisis le bon infinitif." puis items "Quel est
+    l'infinitif du verbe dans « Tu lis une histoire. » ?", "Quel est l'infinitif du
+    verbe dans « Nous mangeons... » ?" (répétition inutile de la même formule).
+    Exemple CORRECT : consigne "Choisis le bon infinitif du verbe conjugué dans
+    chaque phrase." puis items "Tu lis une histoire.", "Nous mangeons à la maison."
+    (la tâche est déjà claire, chaque item ne montre que la phrase à traiter).
 
 FORMAT DE SORTIE :
 Réponds UNIQUEMENT avec le JSON, sans texte avant, sans texte après, sans balises markdown (pas de ```).
